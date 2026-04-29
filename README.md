@@ -61,21 +61,36 @@ python model/train.py
 mysql -u root -p < database/schema.sql
 ```
 
-5. Start backend:
+5. Start backend (single app mode, serves frontend too):
 
 ```bash
 python backend/app.py
 ```
 
-6. Open frontend:
+6. Open app:
 
-Open `frontend/index.html` in browser.
+Open `http://127.0.0.1:5000` in browser.
+
+## Deployment Notes
+
+- The Flask app now serves frontend pages and API from the same domain.
+- For production, run:
+
+```bash
+gunicorn backend.app:app
+```
+
+- Platform configs:
+  - `Procfile` included: `web: gunicorn backend.app:app`
+  - `requirements.txt` includes `gunicorn`
 
 ## API Endpoints
 
+- `GET /` - Frontend app home page
 - `GET /health` - API health
 - `GET /metrics` - Returns RMSE, MAE, R2, and classification accuracy
 - `POST /predict` - Predict magnitude and risk
+- `GET /generated-charts/<filename>` - Serve generated chart images
 
 Example `/predict` body:
 

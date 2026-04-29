@@ -1,4 +1,7 @@
-const apiBase = "http://127.0.0.1:5000";
+const isLocalNpmPreview =
+  ["localhost", "127.0.0.1"].includes(window.location.hostname) &&
+  window.location.port === "5173";
+const apiBase = isLocalNpmPreview ? "http://127.0.0.1:5000" : "";
 
 let forecastChart;
 let r2Chart;
@@ -8,11 +11,12 @@ let predCompareChart;
 let riskProbChart;
 let cachedMetrics;
 let modelAccuracyScores = {};
-const chartImageIds = [
-  "chartMagnitudeDepth",
-  "chartRiskDistribution",
-  "chartRmseComparison",
-];
+const generatedChartFiles = {
+  chartMagnitudeDepth: "magnitude_vs_depth.png",
+  chartRiskDistribution: "risk_distribution.png",
+  chartRmseComparison: "rmse_comparison.png",
+};
+const generatedChartBase = apiBase ? `${apiBase}/generated-charts` : "/generated-charts";
 
 const el = (id) => document.getElementById(id);
 const has = (id) => Boolean(el(id));
@@ -27,11 +31,10 @@ const pct = (v) => `${(Number(v) * 100).toFixed(2)}%`;
 function refreshGeneratedCharts() {
   if (!has("chartsUpdatedAt")) return;
   const cacheBuster = `t=${Date.now()}`;
-  chartImageIds.forEach((id) => {
+  Object.entries(generatedChartFiles).forEach(([id, filename]) => {
     const img = el(id);
     if (!img) return;
-    const base = img.src.split("?")[0];
-    img.src = `${base}?${cacheBuster}`;
+    img.src = `${generatedChartBase}/${filename}?${cacheBuster}`;
   });
   const now = new Date().toLocaleString();
   setText("chartsUpdatedAt", `Last updated: ${now}`);

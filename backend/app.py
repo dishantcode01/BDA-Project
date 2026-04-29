@@ -17,6 +17,39 @@ app = Flask(__name__)
 CORS(app)
 
 
+FRONTEND_DIR = BASE_DIR / "frontend"
+
+
+@app.get("/")
+def serve_home():
+    return send_from_directory(FRONTEND_DIR, "index.html")
+
+
+@app.get("/index.html")
+def serve_index_page():
+    return send_from_directory(FRONTEND_DIR, "index.html")
+
+
+@app.get("/analytics.html")
+def serve_analytics_page():
+    return send_from_directory(FRONTEND_DIR, "analytics.html")
+
+
+@app.get("/predictor.html")
+def serve_predictor_page():
+    return send_from_directory(FRONTEND_DIR, "predictor.html")
+
+
+@app.get("/script.js")
+def serve_script():
+    return send_from_directory(FRONTEND_DIR, "script.js")
+
+
+@app.get("/styles.css")
+def serve_styles():
+    return send_from_directory(FRONTEND_DIR, "styles.css")
+
+
 def load_pickle(path: Path):
     with open(path, "rb") as f:
         return pickle.load(f)
@@ -223,4 +256,5 @@ def predict():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.getenv("PORT", "5000"))
+    app.run(host="0.0.0.0", port=port, debug=True)
