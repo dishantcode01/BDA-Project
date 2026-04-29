@@ -6,7 +6,9 @@ frontend:
         - echo "No npm build needed for static frontend"
     build:
       commands:
-        - echo "window.__SEISMO_API_BASE__='${API_BASE_URL}';" > frontend/config.js
+        - echo "window.__SEISMO_API_BASE__='${API_BASE_URL:-}';" > frontend/config.js
+        - echo "window.__SEISMO_STATIC_MODE__=true;" >> frontend/config.js
+        - echo "window.__SEISMO_CHARTS_BASE__='${CHARTS_BASE_URL:-https://raw.githubusercontent.com/dishantcode01/BDA-Project/main/report/charts}';" >> frontend/config.js
   artifacts:
     baseDirectory: frontend
     files:

@@ -102,6 +102,16 @@ API_BASE_URL=https://<your-backend-domain>
 
 At build time, Amplify writes this value into `frontend/config.js`, and the frontend will call the correct backend API URL.
 
+### AWS Amplify Static-Only Mode (No Backend)
+
+If you do not want to deploy any backend API, this repo also supports static mode:
+
+- `frontend/data/metrics.json` and `frontend/data/feature_importance.json` are used directly.
+- Prediction and chart comparison visuals run with client-side demo logic.
+- Dataset chart images are loaded from the GitHub raw URLs.
+
+In this mode, deploy to Amplify normally using the included `amplify.yml`.
+
 ## API Endpoints
 
 - `GET /` - Frontend app home page

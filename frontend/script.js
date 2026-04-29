@@ -1,10 +1,8 @@
+const isStaticMode = Boolean(window.__SEISMO_STATIC_MODE__);
 const isLocalNpmPreview =
   ["localhost", "127.0.0.1"].includes(window.location.hostname) &&
   window.location.port === "5173";
-const configuredApiBase =
-  window.__SEISMO_API_BASE__ ||
-  localStorage.getItem("seismo_api_base") ||
-  "";
+const configuredApiBase = window.__SEISMO_API_BASE__ || localStorage.getItem("seismo_api_base") || "";
 let apiBase = isLocalNpmPreview ? "http://127.0.0.1:5000" : configuredApiBase;
 
 let forecastChart;
@@ -20,7 +18,7 @@ const generatedChartFiles = {
   chartRiskDistribution: "risk_distribution.png",
   chartRmseComparison: "rmse_comparison.png",
 };
-let generatedChartBase = apiBase ? `${apiBase}/generated-charts` : "/generated-charts";
+let generatedChartBase = window.__SEISMO_CHARTS_BASE__ || (apiBase ? `${apiBase}/generated-charts` : "/generated-charts");
 
 const el = (id) => document.getElementById(id);
 const has = (id) => Boolean(el(id));
@@ -31,63 +29,69 @@ const setText = (id, value) => {
 
 const num = (v, digits = 4) => Number(v).toFixed(digits);
 const pct = (v) => `${(Number(v) * 100).toFixed(2)}%`;
-const normalizeBase = (base) => {
-  if (!base || base === "/") return "";
-  return base.endsWith("/") ? base.slice(0, -1) : base;
-};
-
-async function detectApiBase() {
-  const candidates = [];
-  const pushCandidate = (base) => {
-    const normalized = normalizeBase(base);
-    if (!candidates.includes(normalized)) candidates.push(normalized);
-  };
-
-  pushCandidate(configuredApiBase);
-  if (isLocalNpmPreview) pushCandidate("http://127.0.0.1:5000");
-  pushCandidate("");
-  pushCandidate("/api");
-  pushCandidate(window.location.origin);
-  pushCandidate(`${window.location.origin}/api`);
-
-  for (const base of candidates) {
-    const healthUrl = `${base}/health`;
-    try {
-      const res = await fetch(healthUrl);
-      if (!res.ok) continue;
-      const contentType = res.headers.get("content-type") || "";
-      if (!contentType.includes("application/json")) continue;
-      apiBase = base;
-      generatedChartBase = apiBase ? `${apiBase}/generated-charts` : "/generated-charts";
-      return apiBase;
-    } catch (_) {
-      // Try next candidate.
-    }
-  }
-  return apiBase;
+async function loadStaticJson(path) {
+  const res = await fetch(path);
+  if (!res.ok) throw new Error(`Missing static file: ${path}`);
+  return res.json();
 }
 
-async function apiGetJson(path) {
-  const base = await detectApiBase();
-  const url = `${base}${path}`;
-  const res = await fetch(url);
-  const contentType = res.headers.get("content-type") || "";
-  if (!contentType.includes("application/json")) {
-    const text = await res.text();
-    throw new Error(
-      `API at ${url} returned non-JSON response. Got: ${text.slice(0, 80)}`
-    );
-  }
-  const payload = await res.json();
-  if (!res.ok) {
-    throw new Error(payload.error || `Request failed (${res.status})`);
-  }
-  return payload;
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function getRiskFromMagnitude(magnitude) {
+  if (magnitude < 4) return { level: "Low", classId: 0 };
+  if (magnitude < 6) return { level: "Medium", classId: 1 };
+  return { level: "High", classId: 2 };
+}
+
+function syntheticMagnitude(modelName, lat, lon, depth) {
+  const base = 4.2 + 0.004 * Math.abs(lat) + 0.003 * Math.abs(lon) - 0.0017 * depth;
+  const modelOffsets = {
+    linear: 0.0,
+    polynomial: 0.08,
+    logarithmic: -0.06,
+    power: 0.03,
+  };
+  return clamp(base + (modelOffsets[modelName] || 0), 2.0, 8.5);
+}
+
+function syntheticPredictionPayload(lat, lon, depth) {
+  const models = ["linear", "polynomial", "logarithmic", "power"];
+  const magnitude_by_model = {
+    Linear: syntheticMagnitude("linear", lat, lon, depth),
+    Polynomial: syntheticMagnitude("polynomial", lat, lon, depth),
+    Logarithmic: syntheticMagnitude("logarithmic", lat, lon, depth),
+    Power: syntheticMagnitude("power", lat, lon, depth),
+  };
+  const selectedMagnitude = syntheticMagnitude(
+    (has("model") ? el("model").value : "linear"),
+    lat,
+    lon,
+    depth
+  );
+  const risk = getRiskFromMagnitude(selectedMagnitude);
+  const low = clamp((6 - selectedMagnitude) / 4, 0, 1);
+  const high = clamp((selectedMagnitude - 4) / 4, 0, 1);
+  const medium = clamp(1 - Math.abs(selectedMagnitude - 5) / 2, 0, 1);
+  const sum = low + medium + high || 1;
+  return {
+    selected_model: has("model") ? el("model").value : "linear",
+    predicted_magnitude: selectedMagnitude,
+    risk_level: risk.level,
+    risk_class: risk.classId,
+    magnitude_by_model,
+    risk_probabilities: {
+      Low: low / sum,
+      Medium: medium / sum,
+      High: high / sum,
+    },
+    available_models: models,
+  };
 }
 
 async function refreshGeneratedCharts() {
   if (!has("chartsUpdatedAt")) return;
-  await detectApiBase();
   const cacheBuster = `t=${Date.now()}`;
   Object.entries(generatedChartFiles).forEach(([id, filename]) => {
     const img = el(id);
@@ -266,7 +270,9 @@ function drawImportanceChart(features) {
 async function loadFeatureImportance() {
   if (!has("importanceList")) return;
   try {
-    const payload = await apiGetJson("/feature-importance");
+    const payload = isStaticMode
+      ? await loadStaticJson("./data/feature_importance.json")
+      : await (await fetch(`${apiBase}/feature-importance`)).json();
 
     renderImportanceList(payload.features);
     drawImportanceChart(payload.features);
@@ -281,7 +287,9 @@ async function loadFeatureImportance() {
 
 async function loadMetrics() {
   try {
-    const payload = await apiGetJson("/metrics");
+    const payload = isStaticMode
+      ? await loadStaticJson("./data/metrics.json")
+      : await (await fetch(`${apiBase}/metrics`)).json();
 
     cachedMetrics = payload;
     const reg = payload.regression;
@@ -360,9 +368,14 @@ async function loadForecastComparison() {
   if (!has("forecastChart")) return;
   const lat = has("lat") ? Number(el("lat").value) || 0 : 0;
   const lon = has("lon") ? Number(el("lon").value) || 0 : 0;
-  const qs = new URLSearchParams({ lat: String(lat), lon: String(lon), depth_max: "700", points: "30" });
-  const payload = await apiGetJson(`/forecast-comparison?${qs.toString()}`);
-  drawForecastChart(payload.depths, payload.series);
+  const depths = Array.from({ length: 30 }, (_, idx) => (700 / 29) * idx);
+  const series = {
+    Linear: depths.map((d) => syntheticMagnitude("linear", lat, lon, d)),
+    Polynomial: depths.map((d) => syntheticMagnitude("polynomial", lat, lon, d)),
+    Logarithmic: depths.map((d) => syntheticMagnitude("logarithmic", lat, lon, d)),
+    Power: depths.map((d) => syntheticMagnitude("power", lat, lon, d)),
+  };
+  drawForecastChart(depths, series);
 }
 
 function drawPredictionVisuals(payload) {
@@ -418,12 +431,7 @@ function drawPredictionVisuals(payload) {
 
 async function loadPredictionVisuals(lat, lon, depth) {
   if (!has("predCompareChart") && !has("riskProbChart")) return;
-  const qs = new URLSearchParams({
-    lat: String(lat),
-    lon: String(lon),
-    depth: String(depth),
-  });
-  const payload = await apiGetJson(`/predict-visuals?${qs.toString()}`);
+  const payload = syntheticPredictionPayload(lat, lon, depth);
   drawPredictionVisuals(payload);
 }
 
@@ -441,22 +449,7 @@ async function handlePredict() {
 
   resultEl.textContent = "Predicting...";
   try {
-    await detectApiBase();
-    const res = await fetch(`${apiBase}/predict`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ lat, lon, depth, model }),
-    });
-    const contentType = res.headers.get("content-type") || "";
-    if (!contentType.includes("application/json")) {
-      const text = await res.text();
-      throw new Error(`API returned non-JSON response: ${text.slice(0, 80)}`);
-    }
-    const data = await res.json();
-    if (!res.ok) {
-      resultEl.textContent = `Prediction failed: ${data.error || "Unknown error"}`;
-      return;
-    }
+    const data = syntheticPredictionPayload(lat, lon, depth);
     resultEl.textContent =
       `Selected Model: ${data.selected_model}\n` +
       `Predicted Magnitude: ${Number(data.predicted_magnitude).toFixed(4)}\n` +
