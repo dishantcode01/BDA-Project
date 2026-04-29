@@ -18,7 +18,23 @@ const generatedChartFiles = {
   chartRiskDistribution: "risk_distribution.png",
   chartRmseComparison: "rmse_comparison.png",
 };
-let generatedChartBase = window.__SEISMO_CHARTS_BASE__ || (apiBase ? `${apiBase}/generated-charts` : "/generated-charts");
+let generatedChartBase =
+  window.__SEISMO_CHARTS_BASE__ ||
+  (apiBase ? `${apiBase}/generated-charts` : "/generated-charts");
+if (
+  window.__SEISMO_CHARTS_BASE__ &&
+  window.__SEISMO_CHARTS_BASE__.includes("githubusercontent.com") &&
+  apiBase
+) {
+  // If we have an API base, prefer it for charts unless the GitHub URL was explicitly changed from default
+  const isDefaultGitHub =
+    window.__SEISMO_CHARTS_BASE__ ===
+    "https://raw.githubusercontent.com/dishantcode01/BDA-Project/main/report/charts";
+  if (isDefaultGitHub) {
+    generatedChartBase = `${apiBase}/generated-charts`;
+  }
+}
+
 
 const el = (id) => document.getElementById(id);
 const has = (id) => Boolean(el(id));
@@ -368,14 +384,26 @@ async function loadForecastComparison() {
   if (!has("forecastChart")) return;
   const lat = has("lat") ? Number(el("lat").value) || 0 : 0;
   const lon = has("lon") ? Number(el("lon").value) || 0 : 0;
-  const depths = Array.from({ length: 30 }, (_, idx) => (700 / 29) * idx);
-  const series = {
-    Linear: depths.map((d) => syntheticMagnitude("linear", lat, lon, d)),
-    Polynomial: depths.map((d) => syntheticMagnitude("polynomial", lat, lon, d)),
-    Logarithmic: depths.map((d) => syntheticMagnitude("logarithmic", lat, lon, d)),
-    Power: depths.map((d) => syntheticMagnitude("power", lat, lon, d)),
-  };
-  drawForecastChart(depths, series);
+
+  if (isStaticMode) {
+    const depths = Array.from({ length: 30 }, (_, idx) => (700 / 29) * idx);
+    const series = {
+      Linear: depths.map((d) => syntheticMagnitude("linear", lat, lon, d)),
+      Polynomial: depths.map((d) => syntheticMagnitude("polynomial", lat, lon, d)),
+      Logarithmic: depths.map((d) => syntheticMagnitude("logarithmic", lat, lon, d)),
+      Power: depths.map((d) => syntheticMagnitude("power", lat, lon, d)),
+    };
+    drawForecastChart(depths, series);
+  } else {
+    try {
+      const res = await fetch(`${apiBase}/forecast-comparison?lat=${lat}&lon=${lon}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      drawForecastChart(data.depths, data.series);
+    } catch (err) {
+      console.error("Forecast comparison error:", err);
+    }
+  }
 }
 
 function drawPredictionVisuals(payload) {
@@ -431,8 +459,20 @@ function drawPredictionVisuals(payload) {
 
 async function loadPredictionVisuals(lat, lon, depth) {
   if (!has("predCompareChart") && !has("riskProbChart")) return;
-  const payload = syntheticPredictionPayload(lat, lon, depth);
-  drawPredictionVisuals(payload);
+
+  if (isStaticMode) {
+    const payload = syntheticPredictionPayload(lat, lon, depth);
+    drawPredictionVisuals(payload);
+  } else {
+    try {
+      const res = await fetch(`${apiBase}/predict-visuals?lat=${lat}&lon=${lon}&depth=${depth}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      drawPredictionVisuals(data);
+    } catch (err) {
+      console.error("Prediction visuals error:", err);
+    }
+  }
 }
 
 async function handlePredict() {
@@ -449,12 +489,25 @@ async function handlePredict() {
 
   resultEl.textContent = "Predicting...";
   try {
-    const data = syntheticPredictionPayload(lat, lon, depth);
+    let data;
+    if (isStaticMode) {
+      data = syntheticPredictionPayload(lat, lon, depth);
+    } else {
+      const res = await fetch(`${apiBase}/predict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lat, lon, depth, model }),
+      });
+      data = await res.json();
+      if (data.error) throw new Error(data.error);
+    }
+
     resultEl.textContent =
       `Selected Model: ${data.selected_model}\n` +
       `Predicted Magnitude: ${Number(data.predicted_magnitude).toFixed(4)}\n` +
       `Risk Level: ${data.risk_level}\n` +
       `Risk Class ID: ${data.risk_class}`;
+
     localStorage.setItem("seismo_active_model", data.selected_model);
     updateDashboardForSelectedModel(data.selected_model);
     await loadForecastComparison();
