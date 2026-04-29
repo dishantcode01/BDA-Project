@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Overview · SeismoAI</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Big Data Analytics</div>
+    <nav class="nav-links">
+      <a class="active" href="./index.html">Overview</a>
+      <a href="./analytics.html">Analytics</a>
+      <a href="./predictor.html">Predictor</a>
+    </nav>
+    <div class="badge">Earthquake Intelligence</div>
+  </header>
+
+  <main class="container">
+    <section class="hero hero-image">
+      <p class="eyebrow">BDA Project · Earthquake Monitoring</p>
+      <h1>Predicting Earthquake <span class="accent">Magnitude and Risk</span></h1>
+      <p class="subtitle">
+        <!-- End-to-end system: Dataset -> ML Models -> Flask API -> Dashboard. Navigate to analytics and predictor pages for live model output. -->
+      </p>
+      <label class="model-start">
+        Select Model At Start
+        <select id="activeModel">
+          <option value="linear">Linear</option>
+          <option value="polynomial">Polynomial</option>
+          <option value="logarithmic">Logarithmic</option>
+          <option value="power">Power</option>
+        </select>
+      </label>
+      <div class="stats-row">
+        <div class="stat"><div class="value" id="bestRmse">--</div><div class="label">Selected Model RMSE</div></div>
+        <div class="stat"><div class="value" id="bestR2">--</div><div class="label">Selected Model R²</div></div>
+        <div class="stat"><div class="value" id="classAcc">--</div><div class="label">Selected Model Accuracy Score</div></div>
+        <div class="stat"><div class="value">4</div><div class="label">Regression Models</div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Why Earthquake Prediction Matters</h2>
+      <p class="section-note">
+        Earthquakes cannot be fully prevented, but better risk estimation can reduce damage by improving early warning,
+        evacuation planning, emergency deployment, and infrastructure response.
+      </p>
+      <div class="news-grid">
+        <article class="news-card">
+          <img src="https://images.unsplash.com/photo-1547981609-4b6bfe67ca0b?auto=format&fit=crop&w=1200&q=80" alt="Damage after Nepal earthquake" />
+          <div class="news-body">
+            <h3>2015 Nepal Earthquake</h3>
+            <p>Major infrastructure collapse and large human loss highlighted gaps in readiness and hazard communication.</p>
+          </div>
+        </article>
+        <article class="news-card">
+          <img src="https://images.unsplash.com/photo-1527489377706-5bf97e608852?auto=format&fit=crop&w=1200&q=80" alt="Turkey earthquake destruction" />
+          <div class="news-body">
+            <h3>2023 Turkey-Syria Earthquakes</h3>
+            <p>Severe urban losses showed why faster risk-level insights and regional prioritization are critical.</p>
+          </div>
+        </article>
+        <article class="news-card">
+          <img src="https://images.unsplash.com/photo-1508182314998-3bd49473002f?auto=format&fit=crop&w=1200&q=80" alt="2011 Japan earthquake and tsunami impact" />
+          <div class="news-body">
+            <h3>2011 Japan Earthquake</h3>
+            <p>Complex cascading impacts emphasized the value of data-driven risk monitoring and resilient planning.</p>
+          </div>
+        </article>
+      </div>
+      <div class="impact-box">
+        <h3>How This Prediction Model Can Be Used</h3>
+        <ul>
+          <li>Estimate magnitude and risk class quickly for incoming seismic coordinates.</li>
+          <li>Prioritize response zones (Low / Medium / High) for control rooms and district teams.</li>
+          <li>Support public alerting workflows and pre-positioning of medical and rescue resources.</li>
+          <li>Guide long-term planning by identifying high-risk depth/region behavior patterns.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Dataset Class Visuals</h2>
+      <p class="section-note">
+        Graphs below are generated from your earthquake dataset during training. These represent class and behavior patterns.
+      </p>
+      <div class="image-list">
+        <figure class="analysis-item">
+          <img id="chartRiskDistribution" src="http://127.0.0.1:5000/generated-charts/risk_distribution.png" alt="Risk distribution chart" />
+          <figcaption>
+            <strong>Top Class Visual: Risk Distribution</strong><br />
+            Low / Medium / High risk class count from your current dataset.
+          </figcaption>
+        </figure>
+        <figure class="analysis-item">
+          <img id="chartMagnitudeDepth" src="http://127.0.0.1:5000/generated-charts/magnitude_vs_depth.png" alt="Magnitude vs Depth chart" />
+          <figcaption>
+            <strong>Magnitude vs Depth</strong><br />
+            Shows depth relation with observed magnitude values in dataset.
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Dataset Top Features</h2>
+      <p class="section-note">
+        Top features are computed from your dataset using Random Forest feature importance on risk prediction.
+      </p>
+      <div class="chart-grid">
+        <article class="chart-card">
+          <h3>Top Feature Importance Chart</h3>
+          <canvas id="importanceChart"></canvas>
+        </article>
+        <article class="chart-card">
+          <h3>Top Feature Contribution List</h3>
+          <div id="importanceList" class="importance-list">Loading...</div>
+          <p class="chart-note" id="importanceMeta">Source: --</p>
+        </article>
+      </div>
+      <div class="chart-actions">
+        <button id="refreshImportanceBtn" class="secondary">Refresh Top Features</button>
+        <button id="refreshChartsBtn" class="secondary">Refresh Dataset Charts</button>
+        <span id="chartsUpdatedAt">Last updated: --</span>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="./script.js"></script>
+</body>
+</html>

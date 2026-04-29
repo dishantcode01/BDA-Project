@@ -1,0 +1,47 @@
+{
+  "model": "RandomForestClassifier",
+  "reference": "Top 10 numeric feature importances for predicting risk_class",
+  "accuracy": 0.9830624856946669,
+  "features": [
+    {
+      "feature": "nst",
+      "importance": 0.24130088984657688
+    },
+    {
+      "feature": "magNst",
+      "importance": 0.1690055491705883
+    },
+    {
+      "feature": "dmin",
+      "importance": 0.11333528083787217
+    },
+    {
+      "feature": "gap",
+      "importance": 0.11075566369332297
+    },
+    {
+      "feature": "horizontalError",
+      "importance": 0.09241457810244605
+    },
+    {
+      "feature": "rms",
+      "importance": 0.08657536828333232
+    },
+    {
+      "feature": "depth",
+      "importance": 0.08361559445064022
+    },
+    {
+      "feature": "latitude",
+      "importance": 0.04604859650159201
+    },
+    {
+      "feature": "longitude",
+      "importance": 0.036181123405558256
+    },
+    {
+      "feature": "depthError",
+      "importance": 0.020328500093652904
+    }
+  ]
+}

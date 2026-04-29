@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+
+# Python artifacts
+.venv/
+venv/
+.pytest_cache/
+
+# Frontend artifacts
+node_modules/
+dist/
+
+# Local runtime/config temp files
+.matplotlib/

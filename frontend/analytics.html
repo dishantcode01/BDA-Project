@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analytics · Big Data Analytics</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Big Data Analytics</div>
+    <nav class="nav-links">
+      <a href="./index.html">Overview</a>
+      <a class="active" href="./analytics.html">Analytics</a>
+      <a href="./predictor.html">Predictor</a>
+    </nav>
+    <div class="badge">Model Analytics</div>
+  </header>
+
+  <main class="container">
+    <section class="panel">
+      <h2>Model Performance Analytics</h2>
+      <p class="section-note">
+        Accuracy shown below is a model comparison score
+        normalized for your dataset (best model capped at 85%).
+      </p>
+      <div class="kpi-grid">
+        <article class="kpi-card"><h3>Selected Model RMSE</h3><p id="linearRmse">--</p></article>
+        <article class="kpi-card"><h3>Selected Model MAE</h3><p id="polyRmse">--</p></article>
+        <article class="kpi-card"><h3>Selected Model R²</h3><p id="logRmse">--</p></article>
+        <article class="kpi-card"><h3>Current Selected Model</h3><p id="powerRmse">--</p></article>
+        <article class="kpi-card"><h3>Linear Baseline R²</h3><p id="linearR2">--</p></article>
+        <article class="kpi-card"><h3>Selected Model Accuracy Score</h3><p id="riskAcc">--</p></article>
+      </div>
+      <label class="model-start">
+        Select Model At Start
+        <select id="activeModel">
+          <option value="linear">Linear</option>
+          <option value="polynomial">Polynomial</option>
+          <option value="logarithmic">Logarithmic</option>
+          <option value="power">Power</option>
+        </select>
+      </label>
+      <div class="chart-grid">
+        <article class="chart-card">
+          <h3>Magnitude Forecast Comparison</h3>
+          <p class="chart-note">Forecasted magnitude vs depth across all models.</p>
+          <canvas id="forecastChart"></canvas>
+        </article>
+        <article class="chart-card">
+          <h3>R² Comparison</h3>
+          <p class="chart-note">Higher R² indicates better fit.</p>
+          <canvas id="r2Chart"></canvas>
+        </article>
+        <article class="chart-card chart-span-2">
+          <h3>Accuracy Comparison (All Models)</h3>
+          <p class="chart-note">Scaled comparison score where best resembling model reaches 85%.</p>
+          <canvas id="accuracyChart"></canvas>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Top 10 Feature Importances</h2>
+      <p class="section-note">Random Forest feature importance on your earthquake dataset.</p>
+      <div class="chart-actions">
+        <button id="refreshImportanceBtn" class="secondary">Refresh Feature Importance</button>
+        <span id="importanceMeta">Source: --</span>
+      </div>
+      <div class="chart-grid">
+        <article class="chart-card">
+          <h3>Importance Bar Chart</h3>
+          <canvas id="importanceChart"></canvas>
+        </article>
+        <article class="chart-card">
+          <h3>Feature Contribution List</h3>
+          <div id="importanceList" class="importance-list">Loading...</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Generated Analysis Charts</h2>
+      <div class="chart-actions">
+        <button id="refreshChartsBtn" class="secondary">Refresh Generated Charts</button>
+        <span id="chartsUpdatedAt">Last updated: --</span>
+      </div>
+      <div class="image-list">
+        <figure class="analysis-item">
+          <img id="chartMagnitudeDepth" src="http://127.0.0.1:5000/generated-charts/magnitude_vs_depth.png" alt="Magnitude vs Depth chart" />
+          <figcaption><strong>Magnitude vs Depth</strong><br />Depth impact on magnitude.</figcaption>
+        </figure>
+        <figure class="analysis-item">
+          <img id="chartRiskDistribution" src="http://127.0.0.1:5000/generated-charts/risk_distribution.png" alt="Risk distribution chart" />
+          <figcaption><strong>Risk Distribution</strong><br />Low/Medium/High class balance.</figcaption>
+        </figure>
+        <figure class="analysis-item">
+          <img id="chartRmseComparison" src="http://127.0.0.1:5000/generated-charts/rmse_comparison.png" alt="RMSE comparison chart" />
+          <figcaption><strong>Model RMSE Snapshot</strong><br />Saved training-time error comparison.</figcaption>
+        </figure>
+      </div>
+    </section>
+  </main>
+
+  <script src="./script.js"></script>
+</body>
+</html>

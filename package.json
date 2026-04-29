@@ -1,0 +1,9 @@
+{
+  "name": "earthquake-project",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "python3 -m http.server 5173 --directory frontend",
+    "build": "rm -rf dist && mkdir -p dist && cp -R frontend/. dist/"
+  }
+}

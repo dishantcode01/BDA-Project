@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Big Data Analytics</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Big Data Analytics</div>
+    <nav class="nav-links">
+      <a href="./index.html">Overview</a>
+      <a href="./analytics.html">Analytics</a>
+      <a class="active" href="./predictor.html">Predictor</a>
+    </nav>
+    <div class="badge">Live Prediction</div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <p class="eyebrow">Prediction Workspace</p>
+      <h1>Earthquake Event <span class="accent">Risk Predictor</span></h1>
+      <p class="subtitle">Enter latitude, longitude, and depth. The system predicts magnitude and risk level in plain text.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Prediction Console</h2>
+      <div class="predictor-grid">
+        <div class="form-box">
+          <label>Latitude <input id="lat" type="number" step="any" placeholder="e.g. 19.07" /></label>
+          <label>Longitude <input id="lon" type="number" step="any" placeholder="e.g. 72.88" /></label>
+          <label>Depth <input id="depth" type="number" step="any" placeholder="e.g. 10.4" /></label>
+          <label>
+            Model
+            <select id="model">
+              <option value="linear">Linear</option>
+              <option value="polynomial">Polynomial</option>
+              <option value="logarithmic">Logarithmic</option>
+              <option value="power">Power</option>
+            </select>
+          </label>
+          <button id="predictBtn">Predict Earthquake</button>
+          <button id="metricsBtn" class="secondary">Refresh Metrics</button>
+        </div>
+        <div class="result-box">
+          <h3>Prediction Output</h3>
+          <p class="chart-note">Readable output format for report/demo use.</p>
+          <pre id="result">No prediction yet.</pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Graphs Based on Predicted Output</h2>
+      <p class="section-note">
+        These charts are generated from your current prediction input (latitude, longitude, depth) and update after each prediction.
+      </p>
+      <div class="chart-grid">
+        <article class="chart-card">
+          <h3>Magnitude by All Models</h3>
+          <p class="chart-note">Compares predicted magnitude for the same event across Linear, Polynomial, Logarithmic, and Power models.</p>
+          <canvas id="predCompareChart"></canvas>
+        </article>
+        <article class="chart-card">
+          <h3>Risk Probability Distribution</h3>
+          <p class="chart-note">Shows model confidence for Low, Medium, and High risk classes for this event.</p>
+          <canvas id="riskProbChart"></canvas>
+        </article>
+      </div>
+    </section>
+
+    <!-- <section class="panel">
+      <h2>Related Earthquake Analysis Visuals</h2>
+      <div class="topic-image-grid">
+        <figure>
+          <img src="https://images.unsplash.com/photo-1446776877081-d282a0f896e2?auto=format&fit=crop&w=1200&q=80" alt="Earth from space" />
+          <figcaption>Global view of earth systems and seismic zones.</figcaption>
+        </figure>
+        <figure>
+          <img src="https://images.unsplash.com/photo-1469289759076-d1484757abc3?auto=format&fit=crop&w=1200&q=80" alt="Earthquake response scene" />
+          <figcaption>Risk prediction helps preparedness and response planning.</figcaption>
+        </figure>
+      </div>
+    </section> -->
+  </main>
+
+  <script src="./script.js"></script>
+</body>
+</html>
