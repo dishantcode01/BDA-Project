@@ -84,6 +84,24 @@ gunicorn backend.app:app
   - `Procfile` included: `web: gunicorn backend.app:app`
   - `requirements.txt` includes `gunicorn`
 
+### AWS Amplify Deployment (Frontend) + Backend API
+
+Amplify Hosting deploys static frontend files. It does **not** run the Flask API process from this repo.
+
+Use this setup:
+
+1. Deploy frontend on Amplify from this repo (uses `amplify.yml`).
+2. Deploy Flask backend separately (AWS App Runner / Elastic Beanstalk / EC2).
+3. In Amplify app environment variables, set:
+
+```bash
+API_BASE_URL=https://<your-backend-domain>
+```
+
+4. Redeploy Amplify after setting `API_BASE_URL`.
+
+At build time, Amplify writes this value into `frontend/config.js`, and the frontend will call the correct backend API URL.
+
 ## API Endpoints
 
 - `GET /` - Frontend app home page
