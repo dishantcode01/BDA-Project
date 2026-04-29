@@ -1,7 +1,11 @@
 const isLocalNpmPreview =
   ["localhost", "127.0.0.1"].includes(window.location.hostname) &&
   window.location.port === "5173";
-const apiBase = isLocalNpmPreview ? "http://127.0.0.1:5000" : "";
+const configuredApiBase =
+  window.__SEISMO_API_BASE__ ||
+  localStorage.getItem("seismo_api_base") ||
+  "";
+let apiBase = isLocalNpmPreview ? "http://127.0.0.1:5000" : configuredApiBase;
 
 let forecastChart;
 let r2Chart;
@@ -16,7 +20,7 @@ const generatedChartFiles = {
   chartRiskDistribution: "risk_distribution.png",
   chartRmseComparison: "rmse_comparison.png",
 };
-const generatedChartBase = apiBase ? `${apiBase}/generated-charts` : "/generated-charts";
+let generatedChartBase = apiBase ? `${apiBase}/generated-charts` : "/generated-charts";
 
 const el = (id) => document.getElementById(id);
 const has = (id) => Boolean(el(id));
@@ -27,9 +31,63 @@ const setText = (id, value) => {
 
 const num = (v, digits = 4) => Number(v).toFixed(digits);
 const pct = (v) => `${(Number(v) * 100).toFixed(2)}%`;
+const normalizeBase = (base) => {
+  if (!base || base === "/") return "";
+  return base.endsWith("/") ? base.slice(0, -1) : base;
+};
 
-function refreshGeneratedCharts() {
+async function detectApiBase() {
+  const candidates = [];
+  const pushCandidate = (base) => {
+    const normalized = normalizeBase(base);
+    if (!candidates.includes(normalized)) candidates.push(normalized);
+  };
+
+  pushCandidate(configuredApiBase);
+  if (isLocalNpmPreview) pushCandidate("http://127.0.0.1:5000");
+  pushCandidate("");
+  pushCandidate("/api");
+  pushCandidate(window.location.origin);
+  pushCandidate(`${window.location.origin}/api`);
+
+  for (const base of candidates) {
+    const healthUrl = `${base}/health`;
+    try {
+      const res = await fetch(healthUrl);
+      if (!res.ok) continue;
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) continue;
+      apiBase = base;
+      generatedChartBase = apiBase ? `${apiBase}/generated-charts` : "/generated-charts";
+      return apiBase;
+    } catch (_) {
+      // Try next candidate.
+    }
+  }
+  return apiBase;
+}
+
+async function apiGetJson(path) {
+  const base = await detectApiBase();
+  const url = `${base}${path}`;
+  const res = await fetch(url);
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    const text = await res.text();
+    throw new Error(
+      `API at ${url} returned non-JSON response. Got: ${text.slice(0, 80)}`
+    );
+  }
+  const payload = await res.json();
+  if (!res.ok) {
+    throw new Error(payload.error || `Request failed (${res.status})`);
+  }
+  return payload;
+}
+
+async function refreshGeneratedCharts() {
   if (!has("chartsUpdatedAt")) return;
+  await detectApiBase();
   const cacheBuster = `t=${Date.now()}`;
   Object.entries(generatedChartFiles).forEach(([id, filename]) => {
     const img = el(id);
@@ -208,11 +266,7 @@ function drawImportanceChart(features) {
 async function loadFeatureImportance() {
   if (!has("importanceList")) return;
   try {
-    const res = await fetch(`${apiBase}/feature-importance`);
-    const payload = await res.json();
-    if (!res.ok) {
-      throw new Error(payload.error || "Failed to load feature importance");
-    }
+    const payload = await apiGetJson("/feature-importance");
 
     renderImportanceList(payload.features);
     drawImportanceChart(payload.features);
@@ -227,11 +281,7 @@ async function loadFeatureImportance() {
 
 async function loadMetrics() {
   try {
-    const res = await fetch(`${apiBase}/metrics`);
-    const payload = await res.json();
-    if (!res.ok) {
-      throw new Error(payload.error || "Failed to load metrics");
-    }
+    const payload = await apiGetJson("/metrics");
 
     cachedMetrics = payload;
     const reg = payload.regression;
@@ -311,9 +361,7 @@ async function loadForecastComparison() {
   const lat = has("lat") ? Number(el("lat").value) || 0 : 0;
   const lon = has("lon") ? Number(el("lon").value) || 0 : 0;
   const qs = new URLSearchParams({ lat: String(lat), lon: String(lon), depth_max: "700", points: "30" });
-  const res = await fetch(`${apiBase}/forecast-comparison?${qs.toString()}`);
-  const payload = await res.json();
-  if (!res.ok) throw new Error(payload.error || "Forecast comparison failed");
+  const payload = await apiGetJson(`/forecast-comparison?${qs.toString()}`);
   drawForecastChart(payload.depths, payload.series);
 }
 
@@ -375,9 +423,7 @@ async function loadPredictionVisuals(lat, lon, depth) {
     lon: String(lon),
     depth: String(depth),
   });
-  const res = await fetch(`${apiBase}/predict-visuals?${qs.toString()}`);
-  const payload = await res.json();
-  if (!res.ok) throw new Error(payload.error || "Prediction visuals failed");
+  const payload = await apiGetJson(`/predict-visuals?${qs.toString()}`);
   drawPredictionVisuals(payload);
 }
 
@@ -395,11 +441,17 @@ async function handlePredict() {
 
   resultEl.textContent = "Predicting...";
   try {
+    await detectApiBase();
     const res = await fetch(`${apiBase}/predict`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ lat, lon, depth, model }),
     });
+    const contentType = res.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      const text = await res.text();
+      throw new Error(`API returned non-JSON response: ${text.slice(0, 80)}`);
+    }
     const data = await res.json();
     if (!res.ok) {
       resultEl.textContent = `Prediction failed: ${data.error || "Unknown error"}`;
